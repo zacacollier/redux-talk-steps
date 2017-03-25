@@ -1,16 +1,12 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
+import React, { Component }  from 'react';
+import ReactDOM, { render }  from 'react-dom';
 import { Provider } from 'react-redux';
-import fp from 'lodash/fp';
-import { createStore } from 'redux';
+import fp                    from 'lodash/fp';
+import { createStore }       from 'redux';
 
 const initialState = {
   min: 0
 }
-/* 4a: Catch the action type in the Root Reducer
- *    and return a new State object.
- *    We can observe the Action in our DevTools...
- */
 const rootReducer = (state = initialState, action) => {
   switch(action.type) {
     case 'UP':
@@ -19,20 +15,29 @@ const rootReducer = (state = initialState, action) => {
       return state;
   }
 }
-
 const store = createStore(
   rootReducer,
   window.devToolsExtension ? window.devToolsExtension() : f => f
 );
-/* 4b: ...but we can't see our data re-rendering
- *
- */
-ReactDOM.render(
-    <Provider store={store}>
-      <h1>
-      { fp.toPairs(store.getState()).map(e => (<div key={e[1]}> {e[0]} : {e[1]}</div>)) }
-      </h1>
-    </Provider>,
-    document.getElementById('root'),
-    document.addEventListener('click', () => store.dispatch({ type: 'UP' })),
-);
+class StateHeader extends Component {
+  render() {
+    const state = store.getState();
+    return (
+      <div>
+        <h1>
+          {state.min}
+        </h1>
+        <button onClick={() => { store.dispatch({ type: 'UP' }) }}>Up!</button>
+      </div>
+    )
+  }
+}
+const renderApp = () => {
+  render (
+      <StateHeader />,
+      document.getElementById('root')
+  );
+}
+// 5: Subscribe the React element to the Redux store - success!
+store.subscribe(renderApp);
+renderApp()
