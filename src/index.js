@@ -3,17 +3,23 @@ import { render }            from 'react-dom';
 import { connect, Provider } from 'react-redux';
 import { createStore }       from 'redux';
 
+// 8a: add a new property to state, and a
+//     corresponding case to our reducer
 const initialState = {
-  min: 0
+  min: 0,
+  max: 9,
+  sum: 0
 }
 const rootReducer = (state = initialState, action) => {
   switch(action.type) {
     case 'UP':
       return { ...state, min: ++state.min }
     case 'DOWN':
-      return { ...state, min: --state.min }
+      return { ...state, max: --state.max }
     case 'RESET':
-      return { ...state, min: 0 }
+      return { ...state, min: 0, max: 0 }
+    case 'ADD':
+      return { ...state, sum: state.min + state.max }
     default:
       return state;
   }
@@ -22,41 +28,42 @@ const store = createStore(
   rootReducer,
   window.devToolsExtension ? window.devToolsExtension() : f => f
 );
-// 7a: Map store properties to props
+// 8b: Map new state property to props...
 const mapStateToProps = (state) => {
   return {
     min: state.min,
+    max: state.max,
+    sum: state.sum
   }
 }
-// 7b: Map compenent's dispatched actions to props
+// 8c: ...and a corresponding action dispatch to props
 const mapDispatchToProps = (dispatch) => {
   return {
     up:    () => dispatch({ type: 'UP' }),
     down:  () => dispatch({ type: 'DOWN' }),
     reset: () => dispatch({ type: 'RESET' }),
+    add: () => dispatch({ type: 'ADD' }),
   }
 }
-/* 7c: Refactor StateHeader to be a more presentational component
- *     that just takes state properties from mapStateToProps,
- *     or passes actions up with mapDispatchToProps.
- *     No more nested passing of props down to child components!
- */
+// 8d: Add new button elements to dispatch actions,
+//     and a new header to render state from props!
 const StateHeader = (props) => (
   <div>
     <h1>
       { props.min }
     </h1>
+    <h1>
+      { props.max }
+    </h1>
     <button onClick={ props.up }>Up!</button>
     <button onClick={ props.down }>Down!</button>
     <button onClick={ props.reset }>Reset!</button>
+    <button onClick={ props.add }>Add!</button>
+    <h1>
+      Sum:  { props.sum }
+    </h1>
   </div>
 )
-/* 7d: connect expects mapStateToProps and mapDispatchToProps as its first 2 arguments,
- *     then a second invocation with the component as an argument. This is because connect
- *     actually returns a named function wrapWithConnect - if we pass a bad input we can view the
- *     error in the react-redux source code
- *     const ConnectStateHeader = connect(mapStateToProps, mapDispatchToProps)(888);
- */
 const ConnectStateHeader = connect(mapStateToProps, mapDispatchToProps)(StateHeader);
 const renderApp = () => {
   render (
