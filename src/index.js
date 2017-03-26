@@ -73,6 +73,5 @@ const renderApp = () => {
       document.getElementById('root')
   );
 }
-// 5: Subscribe the React element to the Redux store - success!
 store.subscribe(renderApp);
 renderApp();
