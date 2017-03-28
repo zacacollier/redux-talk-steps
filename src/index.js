@@ -1,25 +1,50 @@
-import React                 from 'react';
+import React, { Component }  from 'react';
 import { render }            from 'react-dom';
 import { connect, Provider } from 'react-redux';
 import { createStore }       from 'redux';
 
-// 8a: add a new property to state, and a
-//     corresponding case to our reducer
 const initialState = {
+  counters: [
+    {
+      min: 0,
+      max: 9,
+      sum: 0,
+    },
+  ],
+}
+// 9a : move action types into a separate set of constants
+const t = {
+  UP: 'UP',
+  DOWN: 'DOWN',
+  RESET: 'RESET',
+  ADD: 'ADD',
+  NEW: 'NEW',
+  COPY: 'COPY'
+}
+const initialCounter = {
   min: 0,
   max: 9,
   sum: 0
 }
+// 9b: Add new reducers to reflect new actions
 const rootReducer = (state = initialState, action) => {
+  const counterAtId = state.counters[action.id]
   switch(action.type) {
     case 'UP':
-      return { ...state, min: ++state.min }
+      return { ...state, counters: [ ...state.counters, ...counterAtId.min++ ] }
     case 'DOWN':
-      return { ...state, max: --state.max }
+      return { ...state, counters: [ ...state.counters, ...counterAtId.max-- ] }
     case 'RESET':
-      return { ...state, min: 0, max: 0 }
+      const resetCounter = state.counters.map(c => c[action.id] = initialCounter)
+      return { ...state, counters: resetCounter }
     case 'ADD':
-      return { ...state, sum: state.min + state.max }
+      const newSum = counterAtId.min + counterAtId.max
+      const newCounters = state.counters.map(c => c[action.id] = { ...counterAtId, sum: newSum })
+      return { ...state, counters: newCounters }
+    case 'COPY':
+      return { ...state, counters: [ ...state.counters, { ...state.counters[action.id] } ] }
+    case 'NEW':
+      return { ...state, counters: [ ...state.counters, {  ...initialCounter } ] }
     default:
       return state;
   }
@@ -28,42 +53,66 @@ const store = createStore(
   rootReducer,
   window.devToolsExtension ? window.devToolsExtension() : f => f
 );
-// 8b: Map new state property to props...
 const mapStateToProps = (state) => {
   return {
-    min: state.min,
-    max: state.max,
-    sum: state.sum
+    counters: state.counters
   }
 }
-// 8c: ...and a corresponding action dispatch to props
-const mapDispatchToProps = (dispatch) => {
+const mapDispatchToProps = (dispatch, id) => {
   return {
-    up:    () => dispatch({ type: 'UP' }),
-    down:  () => dispatch({ type: 'DOWN' }),
-    reset: () => dispatch({ type: 'RESET' }),
-    add: () => dispatch({ type: 'ADD' }),
+    up:    (id) => dispatch({ type: 'UP', id }),
+    down:  (id) => dispatch({ type: 'DOWN', id }),
+    reset: (id) => dispatch({ type: 'RESET', id }),
+    add: (id) => dispatch({ type: 'ADD', id }),
+    new: (id) => dispatch({ type: 'NEW', id }),
+    copy: (id) => dispatch({ type: 'COPY', id }),
   }
 }
-// 8d: Add new button elements to dispatch actions,
-//     and a new header to render state from props!
-const StateHeader = (props) => (
+// 9c: handleClick will have to pass the action type as well as the event
+const Counter = (props) => (
   <div>
     <h1>
-      { props.min }
+      { props.counter.min }
     </h1>
     <h1>
-      { props.max }
+      { props.counter.max }
     </h1>
-    <button onClick={ props.up }>Up!</button>
-    <button onClick={ props.down }>Down!</button>
-    <button onClick={ props.reset }>Reset!</button>
-    <button onClick={ props.add }>Add!</button>
+    <button id={props.id} onClick={ (e) => props.handleClick(e, t.UP) }>Up</button>
+    <button id={props.id} onClick={ (e) => props.handleClick(e, t.DOWN) }>Down</button>
+    <button id={props.id} onClick={ (e) => props.handleClick(e, t.RESET) }>Reset</button>
+    <button id={props.id} onClick={ (e) => props.handleClick(e, t.ADD) }>Add</button>
+    <button id={props.id} onClick={ (e) => props.handleClick(e, t.NEW) }>New Counter</button>
+    <button id={props.id} onClick={ (e) => props.handleClick(e, t.COPY) }>Copy Counter</button>
     <h1>
-      Sum:  { props.sum }
+      Sum:  { props.counter.sum }
     </h1>
   </div>
 )
+// 9d: add handleClick method to avoid writing a separate handler for each dispatch
+class StateHeader extends Component {
+  handleClick = (event, type) => {
+    event.preventDefault()
+    const { id } = event.target
+    const typeSelector = type.toLowerCase()
+    return this.props[typeSelector](id)
+  }
+  render() {
+    const { counters } = this.props
+    return (
+      <div>
+      { counters.map(each => (
+        <Counter
+         handleClick={this.handleClick}
+         key={counters.indexOf(each)}
+         id={counters.indexOf(each)}
+         counter={each}
+        />))
+      }
+      <button onClick={ this.props.new }>New Counter</button>
+      </div>
+    )
+  }
+}
 const ConnectStateHeader = connect(mapStateToProps, mapDispatchToProps)(StateHeader);
 const renderApp = () => {
   render (
@@ -73,5 +122,5 @@ const renderApp = () => {
       document.getElementById('root')
   );
 }
-store.subscribe(renderApp);
+// 9e: Remove unnecessary '.subscribe()' call since we've added 'Provider'
 renderApp();
